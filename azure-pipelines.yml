@@ -1,6 +1,6 @@
 trigger:
-- '*'
-
+  - '*'
+  
 variables:
   buildConfiguration: 'Release'
 
@@ -21,7 +21,7 @@ stages:
 
     steps:
     - task: UseDotNet@2
-      displayName: 'Use .NET Core SDK $(dotnetSdkVersion)'
+      displayName: 'Use .NET SDK $(dotnetSdkVersion)'
       inputs:
         version: '$(dotnetSdkVersion)'
 
@@ -68,6 +68,7 @@ stages:
 - stage: 'Dev'
   displayName: 'Deploy to the dev environment'
   dependsOn: Build
+  condition: false
   jobs:
   - deployment: Deploy
     pool:
@@ -91,6 +92,7 @@ stages:
 - stage: 'Test'
   displayName: 'Deploy to the test environment'
   dependsOn: Dev
+  condition: false
   jobs:
   - deployment: Deploy
     pool:
@@ -131,5 +133,17 @@ stages:
             displayName: 'Azure App Service Deploy: website'
             inputs:
               azureSubscription: 'Resource Manager - Tailspin - Space Game'
+              deployToSlotOrASE: true
+              resourceGroupName: 'tailspin-space-game-rg'
+              slotName: 'swap'
               appName: '$(WebAppNameStaging)'
               package: '$(Pipeline.Workspace)/drop/$(buildConfiguration)/*.zip'
+          - task: AzureAppServiceManage@0
+            displayName: 'Swap deployment slots'
+            inputs:
+              azureSubscription: 'Resource Manager - Tailspin - Space Game'
+              resourceGroupName: 'tailspin-space-game-rg'
+              webAppName: '$(WebAppNameStaging)'
+              sourceSlot: 'swap'
+              targetSlot: 'production'
+              action: 'Swap Slots'
